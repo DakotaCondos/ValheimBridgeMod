@@ -1,67 +1,129 @@
 # StreamBridge (Valheim)
 
-A lightweight **host-only** bridge for Valheim that listens on `localhost` and executes gameplay actions sent as **JSON** over HTTP. It is designed to be used by companion apps/bots during streams (e.g., chat-triggered spawns, item rewards, or temporary effects).
-
-
----
-
-## Features
-
-- **Local HTTP endpoint**: `POST /command` on `127.0.0.1:<Port>` (default **28575**).
-- **Batch JSON**: Send multiple commands in one request; each command targets a single thing.
-- **Services**: `SpawnService`, `ItemService`, `EffectService` encapsulate game logic.
-- **Spawn patterns**: `front`, `ring`, `line`, `arc`, `wedge`, `grid`, `scatter`, `rain`.
-- **Safety**: Terrain projection & clearance checks; **blocked in interiors/dungeons**; optional **TTL** for auto-despawn.
-- **Items**: Add to inventory or drop at feet when full; quality/variant supported.
-- **Effects**: Apply status effects by name; optional duration.
-- **CORS-ready**: Permissive headers and `OPTIONS` preflight for local web tools.
-- **Minimal logging**: Info-level; detailed info returned in response bodies.
-- **Config auto-creation**: On first run at `BepInEx/StreamBridge/StreamBridge.cfg`.
-- **HTML tester**: `CommandsTester.html` for building/sending JSON quickly.
+A lightweight **host-only** bridge for Valheim that listens on `localhost` and executes gameplay actions sent as **JSON** over HTTP. 
+It is designed to be used by companion apps/bots during streams (e.g., chat-triggered spawns, item rewards, or temporary effects).
 
 ---
 
-## Requirements
+## 📥 Download & Installation
 
-- **Valheim (PC)**  
-- **BepInEx 5** (e.g., 5.4.x)  
-- Windows recommended (other OSes via Wine/Proton may work but are untested here).
+⚠️ **Requires [BepInEx 5](https://docs.bepinex.dev/articles/user_guide/installation/index.html).**  
+BepInEx 5 must be installed into your Valheim folder and the game launched once so that it creates required folders (`BepInEx\plugins`, `BepInEx\config`, `BepInEx\core`).  
+This is a **one-time setup step** — both release users and developers must do this before StreamBridge will work.
+
+➡️ [**Releases Page**](https://github.com/yourname/yourrepo/releases)
+
+1. Download the latest **StreamBridge.zip** from the release assets.  
+   This archive contains the `StreamBridge` plugin folder with the DLL already built.
+2. Extract the contents directly into your Valheim plugins directory:
+   ```
+   Valheim\BepInEx\plugins\
+   ```
+   After extraction, you should have:
+   ```
+   Valheim\BepInEx\plugins\StreamBridge\StreamBridge.dll
+   Valheim\BepInEx\plugins\StreamBridge\Newtonsoft.Json.dll
+   Valheim\BepInEx\plugins\StreamBridge\Newtonsoft.Json.xml
+   ```
+3. Launch Valheim once to auto-generate:
+   ```
+   Valheim\BepInEx\StreamBridge\StreamBridge.cfg
+   ```
+4. *(Recommended)* Download **CommandsTester.html** from the release assets to quickly generate and test commands from your browser.
+
+That’s it — you’re ready to connect local apps and/or use the included tester page.
 
 ---
 
-## Installation
+## 🛠️ Development Setup
 
-1. Install **BepInEx 5** for Valheim.
-2. Build the plugin in **Release** (see _Development_ below).
-3. Place the built DLL here (create the folder if needed):
+Whether you want to build from the included codebase or start your own project, you must first complete the **one-time prerequisite**:
+
+- Install **BepInEx 5 (x64)** into your Valheim folder:  
+  ```
+  C:\Program Files (x86)\Steam\steamapps\common\Valheim\
+  ```
+- Launch Valheim once to generate required folders:  
+  ```
+  BepInEx\plugins\
+  BepInEx\config\
+  BepInEx\core\
+  ```
+- Install **Visual Studio 2022** with the **.NET desktop development** workload.  
+- (Optional but useful) Install dnSpy/ILSpy to explore Valheim APIs.
+
+---
+
+### Option A: Build from this codebase
+
+1. Clone the repository:
+   ```bash
+   git clone https://https://github.com/DakotaCondos/ValheimBridgeMod.git
    ```
-   Valheim/BepInEx/plugins/StreamBridge/StreamBridge.dll
+2. Open the solution in Visual Studio 2022.
+3. Ensure target framework is **.NET Framework 4.7.2** (compatible with Valheim + BepInEx 5).
+4. References should already be set up in the project:
+   - `BepInEx.dll`
+   - `0Harmony.dll`
+   - Unity assemblies from Valheim (`valheim_Data\Managed\`)
+   - `Newtonsoft.Json.dll`
+5. Set build output path so the DLL lands directly in your Valheim plugins folder:  
    ```
-4. (First run) Launch Valheim once to generate:
-   ```
-   Valheim/BepInEx/StreamBridge/StreamBridge.cfg
-   ```
-5. Optional: put the developer tester page somewhere handy and open it in a browser:
-   ```
-   repo/CommandsTester.html
+   Valheim\BepInEx\plugins\StreamBridgeMod\
    ```
 
+6. For packaging, create a folder called `StreamBridge` with the DLL inside, zip it, and attach to a GitHub release.  
+   For local testing, place the DLL under:
+   ```
+   Valheim\BepInEx\plugins\StreamBridge\
+   ```
+
+---
+
+### Option B: Create a project yourself (manual setup)
+
+0. Prerequisites: BepInEx installed + run once (as described above).
+
+1. In Visual Studio:  
+   - **File → New → Project…**  
+   - Template: `Class Library (.NET Framework)`  
+   - Project name: `StreamBridgeMod` (or your choice)  
+   - Target framework: **.NET Framework 4.7.2**
+2. Add required references manually:
+   - From `<Valheim>\valheim_Data\Managed\`:  
+     `assembly_valheim.dll`, `assembly_utils.dll`, `UnityEngine.dll`, `UnityEngine.CoreModule.dll`  
+     (Optionally add more `UnityEngine.*` modules if you need them.)
+   - From `<Valheim>\BepInEx\core\`:  
+     `BepInEx.dll`, `0Harmony.dll`
+   - Via NuGet: add **Newtonsoft.Json** (Copy Local = True so it ships with your DLL).
+   - For all Unity/BepInEx references: set **Copy Local = False** to avoid copying them into your build output.
+3. Set build output path so the DLL lands directly in your Valheim plugins folder:  
+   ```
+   Valheim\BepInEx\plugins\StreamBridgeMod\  
+   ```
+4. Build → Build Solution (`Ctrl+Shift+B`).  
+   Ensure the DLL appears under `BepInEx\plugins\StreamBridgeMod\`.  
+   Also ensure `Newtonsoft.Json.dll` sits next to it if not already provided.
+5. Launch Valheim and check `BepInEx\LogOutput.log` — you should see:  
+   ```
+   Stream Bridge listening on http://127.0.0.1:28575/command
+   ```
+
+6. The rest of development is up to you!
 ---
 
 ## Configuration
 
-File: `BepInEx/StreamBridge/StreamBridge.cfg` (auto-created)
+(File: `BepInEx/StreamBridge/StreamBridge.cfg`, created automatically on first run)
 
-| Section | Key            | Default | Purpose |<br>
-|---------|----------------|---------|---------|<br>
-| Network | **Port**       | 28575   | Local HTTP port (127.0.0.1 only) |<br>
-| Limits  | **MaxSpawned** | 50      | Max spawn count per command |<br>
-| Limits  | **MaxDelay**   | 30      | Max stagger delay (seconds) |<br>
-| Limits  | **MaxTTL**     | 600     | Max time-to-live (seconds) |<br>
-| Limits  | **MaxStars**   | 2       | Max mob star level (0..2) |<br>
-| UI      | **Notify**     | true    | Show MessageHud toasts |<br>
-
-> ⚠️ Rate-limiting/whitelisting is intentionally out of scope. If you proxy/forward the port, you must handle access control.
+| Section | Key            | Default | Purpose |
+|---------|----------------|---------|---------|
+| Network | **Port**       | 28575   | Local HTTP port (127.0.0.1 only) |
+| Limits  | **MaxSpawned** | 50      | Max spawn count per command |
+| Limits  | **MaxDelay**   | 30      | Max stagger delay (seconds) |
+| Limits  | **MaxTTL**     | 600     | Max time-to-live (seconds) |
+| Limits  | **MaxStars**   | 2       | Max mob star level (0..2) |
+| UI      | **Notify**     | true    | Show HUD toasts |
 
 ---
 
@@ -71,177 +133,22 @@ File: `BepInEx/StreamBridge/StreamBridge.cfg` (auto-created)
 `POST http://127.0.0.1:<Port>/command`  
 `OPTIONS` preflight is supported (CORS).
 
-**Request**:
-```jsonc
-{
-  "commands": [
-    {
-      "id": "c1",            // optional string, echoed back
-      "type": "item.give" | "effect.apply" |
-              "spawn.front" | "spawn.ring" | "spawn.line" |
-              "spawn.arc"   | "spawn.wedge"| "spawn.grid" |
-              "spawn.scatter" | "spawn.rain",
-      "payload": { /* see below */ }
-    }
-  ]
-}
-```
-
-**Response**:
-```jsonc
-{
-  "ok": true,
-  "results": [
-    { "id": "c1", "type": "item.give", "ok": true, "queued": true, "meta": { /* clamped values etc. */ } },
-    { "id": "c2", "type": "spawn.ring", "ok": false, "error": "validation_failed", "message": "payload.prefab required" }
-  ]
-}
-```
-
-### Items — `type: "item.give"`
-```jsonc
-"payload": {
-  "prefab": "Wood",   // required
-  "amount": 25,       // >= 1 (default 1)
-  "quality": 1,       // >= 1 (default 1)
-  "variant": 0        // >= 0 (default 0)
-}
-```
-
-### Effects — `type: "effect.apply"`
-```jsonc
-"payload": {
-  "name": "Rested",   // required (status effect name)
-  "duration": 20      // seconds; 0 = default; clamped [1..MaxTTL]
-}
-```
-
-### Spawns — `type: "spawn.*"` (common fields)
-```jsonc
-"payload": {
-  "prefab": "Skeleton", // required, exact prefab name
-  "stars": 1,           // 0..2 (maps to levels 1..3)
-  "delay": 0.25,        // seconds (0..MaxDelay), default 0
-  "ttl": 20             // seconds (0..MaxTTL), default 0 = no auto-despawn
-}
-```
-
-Patterns:
-
-- **spawn.front** — `{ "count": 5, "distance": 8,  "delay": 0.2,  "ttl": 20 }`
-- **spawn.ring**  — `{ "count": 10,"radius": 10, "delay": 0.25, "ttl": 30 }`
-- **spawn.line**  — `{ "count": 8, "spacing": 3, "distance": 15, "delay": 0.15, "ttl": 15 }`
-- **spawn.arc**   — `{ "count": 6, "radius": 8,  "spanDeg": 120, "delay": 0.15, "ttl": 20 }`
-- **spawn.wedge** — `{ "count": 9, "spacing": 3, "distance": 10, "delay": 0.1,  "ttl": 20 }`
-- **spawn.grid**  — `{ "rows": 3, "cols": 4, "spacing": 3, "distance": 12, "delay": 0.1, "ttl": 20 }`
-- **spawn.scatter** — `{ "count": 20, "radius": 12, "distance": 10, "delay": 0.05, "ttl": 8 }`
-- **spawn.rain**  — `{ "count": 12, "radius": 10, "height": 15, "delay": 0.25, "ttl": 20 }`
-
-> Grounded patterns (**front, ring, line, arc, wedge, grid, scatter**) snap to terrain and run safety checks (slope/headroom/clear radius) and are **blocked in interiors/dungeons**. **rain** spawns above and lets entities fall.
-
----
-
-## Examples
-
-Minimal:
-```bash
-curl -X POST "http://127.0.0.1:28575/command" \
-  -H "Content-Type: application/json" \
-  -d '{ "commands":[
-        {"id":"c1","type":"item.give","payload":{"prefab":"Wood","amount":25}},
-        {"id":"c2","type":"effect.apply","payload":{"name":"Wet","duration":20}}
-      ] }'
-```
-
-Waves:
-```bash
-curl -X POST "http://127.0.0.1:28575/command" \
-  -H "Content-Type: application/json" \
-  -d '{ "commands":[
-        {"id":"wave1","type":"spawn.ring","payload":{"prefab":"Skeleton","stars":1,"count":6,"radius":10,"delay":0.25,"ttl":20}},
-        {"id":"wave2","type":"spawn.line","payload":{"prefab":"Draugr","stars":2,"count":8,"spacing":3,"distance":15,"delay":0.15,"ttl":15}}
-      ] }'
-```
-
-PowerShell:
-```powershell
-$body = @{
-  commands = @(
-    @{ id="c1"; type="spawn.grid"; payload=@{ prefab="Greydwarf"; stars=0; rows=3; cols=4; spacing=3; distance=12; delay=0.1; ttl=20 } },
-    @{ id="c2"; type="item.give";   payload=@{ prefab="Resin"; amount=20; quality=1; variant=0 } }
-  )
-} | ConvertTo-Json -Depth 6
-iwr "http://127.0.0.1:28575/command" -Method POST -ContentType "application/json" -Body $body
-```
-
----
-
-# Dev Tester
-
-
-Included page: **`CommandsTester.html`**
-
-- Build commands via dropdowns for items/effects/spawns
-- Reorder/duplicate/delete commands
-- Copy JSON or send directly (CORS-enabled server)
-- Inline response viewer
-
-Open the file directly in your browser and set the endpoint if you changed the port.
-
----
-
-## Project Layout
-
-```
-/BridgePlugin.cs           # BepInEx entry + HTTP server + config + routing + CORS
-/SpawnService.cs           # Spawn patterns & clamping
-/SpawnSafety.cs            # Ground projection, slope/headroom checks, interior blocking
-/ItemService.cs            # Inventory add/drop, stack/quality/variant
-/EffectService.cs          # Apply effects by name, optional duration
-/CommandsTester.html       # Local developer/testing UI
-/StreamBridge-User-Guide.md# End-user documentation
-/SPAWNABLE-GUIDE.md        # Spawnable prefabs & API quick-ref
-```
-
----
-
-## Development
-
-- Open the solution/project in **Visual Studio 2022** (or equivalent).
-- Target the same .NET profile you use for Valheim modding (BepInEx 5 typically uses .NET Framework 4.x on Windows).
-- Reference:
-  - `BepInEx.dll` (and dependencies)
-  - `HarmonyLib.dll`
-  - `UnityEngine` assemblies used by Valheim
-  - `Newtonsoft.Json.dll`
-- Recommended: set references to **Copy Local = false**, and ensure your build output path lands in `BepInEx/plugins/StreamBridge/`.
-- Build **Release** and start Valheim.
-
----
-
-## Troubleshooting
-
-- **No response / blocked by browser** → Ensure CORS preflight (OPTIONS) gets 204 and `Access-Control-Allow-Origin: *` is present. Use the included `BridgePlugin` with the CORS helper.
-- **`not_host`** errors → You must be the host/server (single-player counts as host).
-- **Prefab/Effect not found** → Use exact, case-sensitive names from your game/mod set.
-- **Grounded spawn rejected** → The safety checks reject steep slopes, blocked headroom, or interiors; try different terrain or use smaller counts/radii (or use `spawn.rain` outdoors).
-- **Config not found** → Launch Valheim once with the plugin loaded to auto-generate it in `BepInEx/StreamBridge/`.
+The body must be JSON with a `commands` array. Each command has an `id`, `type`, and `payload`.  
+See the included **User Guide** for detailed examples of `item.give`, `effect.apply`, and `spawn.*` commands.
 
 ---
 
 ## Contributing
 
-PRs and issues welcome. Please keep changes modular (services) and document any new payload fields in the **User Guide**.
+- Issues and PRs welcome.  
+- Please document any new payload fields in the **User Guide**.  
+- For testing during development, use `CommandsTester.html`.
 
 ---
 
 ## License
 
-
-MIT © 2025 StreamBridge contributors — see [LICENSE-MIT.txt](LICENSE-MIT.txt) for full text.
-
-> This license applies to the code in this repository. Valheim assets, names, and trademarks are property of their respective owners.
+MIT © 2025 StreamBridge contributors — see [LICENSE-MIT.txt](LICENSE-MIT.txt) for full text.  
+This license applies only to code in this repository. Valheim assets, names, and trademarks are property of their respective owners.
 
 ---
-
-© 2025 StreamBridge contributors
