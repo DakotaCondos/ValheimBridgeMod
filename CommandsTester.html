@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StreamBridge Tester</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171923;
+      --panel-2: #1f2330;
+      --text: #e6e8ee;
+      --muted: #a7adbd;
+      --accent: #7aa2f7;
+      --ok: #8bd49c;
+      --warn: #ffd580;
+      --err: #ff7b7b;
+      --border: #2a2f3a;
+      --btn: #2d3344;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      color: var(--text);
+      background: linear-gradient(180deg, #0b0d12, #0f1115);
+    }
+
+    header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--panel);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: .4px;
+    }
+
+    header small {
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+    }
+
+    .card h2 {
+      margin: 0;
+      padding: 12px 14px;
+      font-size: 13px;
+      letter-spacing: .3px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--panel-2);
+    }
+
+    .card .body {
+      padding: 14px;
+    }
+
+    label {
+      display: block;
+      margin: 8px 0 4px;
+      color: var(--muted);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #121520;
+      color: var(--text);
+    }
+
+    textarea {
+      min-height: 360px;
+      resize: vertical;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .row-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .flex {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: var(--btn);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: .1s ease;
+    }
+
+    .btn:hover {
+      filter: brightness(1.1);
+    }
+
+    .btn.accent {
+      background: var(--accent);
+      border-color: transparent;
+      color: #0c1022;
+      font-weight: 700;
+    }
+
+    .btn.ok {
+      background: var(--ok);
+      color: #0a1f0f;
+      font-weight: 700;
+      border-color: transparent;
+    }
+
+    .btn.warn {
+      background: var(--warn);
+      color: #3a2b00;
+      font-weight: 700;
+      border-color: transparent;
+    }
+
+    .btn.err {
+      background: var(--err);
+      color: #330a0a;
+      font-weight: 700;
+      border-color: transparent;
+    }
+
+    .list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .cmd {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      background: #121520;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+    }
+
+    .cmd small {
+      color: var(--muted);
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 12px;
+      border-radius: 6px;
+      background: #202535;
+      color: var(--accent);
+      margin-right: 6px;
+    }
+
+    .right-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .inline {
+      display: inline-block;
+    }
+
+    .status {
+      white-space: pre-wrap;
+      background: #0f1320;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      min-height: 80px;
+    }
+
+    .help {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
+    .sep {
+      height: 10px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>StreamBridge Tester</h1>
+    <small>Build JSON commands for <code>POST /command</code> and send to your local server.</small>
+  </header>
+
+  <div class="grid">
+    <!-- Left: Builder / Ingredients -->
+    <section class="card">
+      <h2>Ingredients & Builder</h2>
+      <div class="body">
+
+        <div class="row-2" style="align-items:end">
+          <div>
+            <label for="endpoint">Endpoint</label>
+            <input id="endpoint" value="http://127.0.0.1:28575/command" />
+            <div class="help">Change if you altered the port.</div>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <div class="flex">
+              <button class="btn accent" onclick="sendBatch()">Send ▶</button>
+              <button class="btn" onclick="clearAll()">Clear</button>
+              <button class="btn" onclick="loadExample(1)">Example 1</button>
+              <button class="btn" onclick="loadExample(2)">Example 2</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <!-- Current commands list -->
+        <div>
+          <label>Current Commands</label>
+          <div id="cmdList" class="list"></div>
+          <div class="help">Each command becomes an entry in the <code>commands</code> array.</div>
+        </div>
+
+        <div class="sep"></div>
+
+        <!-- Builder form -->
+        <div class="row-2">
+          <div>
+            <label for="cmdId">Command ID</label>
+            <input id="cmdId" placeholder="e.g., c1 (auto if empty)" />
+          </div>
+          <div>
+            <label for="cmdType">Type</label>
+            <select id="cmdType" onchange="switchType()">
+              <option value="item.give">item.give</option>
+              <option value="effect.apply">effect.apply</option>
+              <optgroup label="spawn.*">
+                <option value="spawn.front">spawn.front</option>
+                <option value="spawn.ring">spawn.ring</option>
+                <option value="spawn.line">spawn.line</option>
+                <option value="spawn.arc">spawn.arc</option>
+                <option value="spawn.wedge">spawn.wedge</option>
+                <option value="spawn.grid">spawn.grid</option>
+                <option value="spawn.scatter">spawn.scatter</option>
+                <option value="spawn.rain">spawn.rain</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
+
+        <!-- Item params -->
+        <div id="pane-item" class="pane">
+          <div class="row-3" style="align-items:end">
+            <div>
+              <label for="itemPrefab">Item prefab</label>
+              <select id="itemPrefab"></select>
+              <input id="itemPrefabCustom" placeholder="Custom prefab name" style="display:none;margin-top:6px;" />
+            </div>
+            <div>
+              <label for="itemAmount">Amount</label>
+              <input id="itemAmount" type="number" min="1" step="1" value="10" />
+            </div>
+            <div>
+              <label for="itemQuality">Quality</label>
+              <select id="itemQuality">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+              </select>
+            </div>
+          </div>
+          <div class="row-3" style="align-items:end">
+            <div>
+              <label for="itemVariant">Variant</label>
+              <select id="itemVariant">
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+            </div>
+            <div>
+              <label for="itemFilter">Filter items</label>
+              <input id="itemFilter" placeholder="type to filter…"
+                oninput="filterSelect('itemPrefab', DATA.items, this.value)" />
+              <div class="help">Filters the item dropdown.</div>
+            </div>
+            <div></div>
+          </div>
+        </div>
+
+        <!-- Effect params -->
+        <div id="pane-effect" class="pane" style="display:none;">
+          <div class="row-2">
+            <div>
+              <label for="effectName">Effect Name</label>
+              <select id="effectName"></select>
+              <input id="effectNameCustom" placeholder="Custom effect name" style="display:none;margin-top:6px;" />
+            </div>
+            <div>
+              <label for="effectDuration">Duration (seconds, 0 = default)</label>
+              <input id="effectDuration" type="number" min="0" step="1" value="20" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Spawn params (common) -->
+        <div id="pane-spawn" class="pane" style="display:none;">
+          <div class="row-2">
+            <div>
+              <label for="spawnPrefab">Mob prefab</label>
+              <select id="spawnPrefab"></select>
+              <input id="spawnPrefabCustom" placeholder="Custom prefab name" style="display:none;margin-top:6px;" />
+            </div>
+            <div>
+              <label for="spawnStars">Stars (0..2)</label>
+              <select id="spawnStars">
+                <option value="0">0</option>
+                <option value="1" selected>1</option>
+                <option value="2">2</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="spawn-front" class="spawn-pane">
+            <div class="row-4">
+              <div><label>Count</label><input id="frontCount" type="number" min="1" step="1" value="5" /></div>
+              <div><label>Distance</label><input id="frontDistance" type="number" min="0" step="1" value="8" /></div>
+              <div><label>Delay (s)</label><input id="frontDelay" type="number" min="0" step="0.05" value="0.2" /></div>
+              <div><label>TTL (s)</label><input id="frontTTL" type="number" min="0" step="1" value="20" /></div>
+            </div>
+          </div>
+
+          <div id="spawn-ring" class="spawn-pane" style="display:none;">
+            <div class="row-4">
+              <div><label>Count</label><input id="ringCount" type="number" min="1" step="1" value="10" /></div>
+              <div><label>Radius</label><input id="ringRadius" type="number" min="0" step="1" value="10" /></div>
+              <div><label>Delay (s)</label><input id="ringDelay" type="number" min="0" step="0.05" value="0.25" /></div>
+              <div><label>TTL (s)</label><input id="ringTTL" type="number" min="0" step="1" value="30" /></div>
+            </div>
+          </div>
+
+          <div id="spawn-line" class="spawn-pane" style="display:none;">
+            <div class="row-4">
+              <div><label>Count</label><input id="lineCount" type="number" min="1" step="1" value="8" /></div>
+              <div><label>Spacing</label><input id="lineSpacing" type="number" min="0" step="0.5" value="3" /></div>
+              <div><label>Distance</label><input id="lineDistance" type="number" min="0" step="1" value="15" /></div>
+              <div><label>Delay (s)</label><input id="lineDelay" type="number" min="0" step="0.05" value="0.15" /></div>
+            </div>
+            <div class="row-2">
+              <div><label>TTL (s)</label><input id="lineTTL" type="number" min="0" step="1" value="15" /></div>
+            </div>
+          </div>
+
+          <div id="spawn-arc" class="spawn-pane" style="display:none;">
+            <div class="row-4">
+              <div><label>Count</label><input id="arcCount" type="number" min="1" step="1" value="6" /></div>
+              <div><label>Radius</label><input id="arcRadius" type="number" min="0" step="1" value="8" /></div>
+              <div><label>Span (deg)</label><input id="arcSpan" type="number" min="0" step="5" value="120" /></div>
+              <div><label>Delay (s)</label><input id="arcDelay" type="number" min="0" step="0.05" value="0.15" /></div>
+            </div>
+            <div class="row-2">
+              <div><label>TTL (s)</label><input id="arcTTL" type="number" min="0" step="1" value="20" /></div>
+            </div>
+          </div>
+
+          <div id="spawn-wedge" class="spawn-pane" style="display:none;">
+            <div class="row-4">
+              <div><label>Count</label><input id="wedgeCount" type="number" min="1" step="1" value="9" /></div>
+              <div><label>Spacing</label><input id="wedgeSpacing" type="number" min="0" step="0.5" value="3" /></div>
+              <div><label>Distance</label><input id="wedgeDistance" type="number" min="0" step="1" value="10" /></div>
+              <div><label>Delay (s)</label><input id="wedgeDelay" type="number" min="0" step="0.05" value="0.1" /></div>
+            </div>
+            <div class="row-2">
+              <div><label>TTL (s)</label><input id="wedgeTTL" type="number" min="0" step="1" value="20" /></div>
+            </div>
+          </div>
+
+          <div id="spawn-grid" class="spawn-pane" style="display:none;">
+            <div class="row-4">
+              <div><label>Rows</label><input id="gridRows" type="number" min="1" step="1" value="3" /></div>
+              <div><label>Cols</label><input id="gridCols" type="number" min="1" step="1" value="4" /></div>
+              <div><label>Spacing</label><input id="gridSpacing" type="number" min="0" step="0.5" value="3" /></div>
+              <div><label>Distance</label><input id="gridDistance" type="number" min="0" step="1" value="12" /></div>
+            </div>
+            <div class="row-2">
+              <div><label>Delay (s)</label><input id="gridDelay" type="number" min="0" step="0.05" value="0.1" /></div>
+              <div><label>TTL (s)</label><input id="gridTTL" type="number" min="0" step="1" value="20" /></div>
+            </div>
+          </div>
+
+          <div id="spawn-scatter" class="spawn-pane" style="display:none;">
+            <div class="row-4">
+              <div><label>Count</label><input id="scatterCount" type="number" min="1" step="1" value="20" /></div>
+              <div><label>Radius</label><input id="scatterRadius" type="number" min="0" step="0.5" value="12" /></div>
+              <div><label>Distance</label><input id="scatterDistance" type="number" min="0" step="1" value="10" /></div>
+              <div><label>Delay (s)</label><input id="scatterDelay" type="number" min="0" step="0.05" value="0.05" />
+              </div>
+            </div>
+            <div class="row-2">
+              <div><label>TTL (s)</label><input id="scatterTTL" type="number" min="0" step="1" value="8" /></div>
+            </div>
+          </div>
+
+          <div id="spawn-rain" class="spawn-pane" style="display:none;">
+            <div class="row-4">
+              <div><label>Count</label><input id="rainCount" type="number" min="1" step="1" value="12" /></div>
+              <div><label>Radius</label><input id="rainRadius" type="number" min="0" step="0.5" value="10" /></div>
+              <div><label>Height</label><input id="rainHeight" type="number" min="1" step="1" value="15" /></div>
+              <div><label>Delay (s)</label><input id="rainDelay" type="number" min="0" step="0.05" value="0.25" /></div>
+            </div>
+            <div class="row-2">
+              <div><label>TTL (s)</label><input id="rainTTL" type="number" min="0" step="1" value="20" /></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="flex">
+          <button class="btn ok" onclick="addCommand()">Add Command</button>
+          <button class="btn" onclick="updatePreview()">Update JSON</button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Right: JSON & Response -->
+    <section class="card">
+      <h2>JSON Preview & Response</h2>
+      <div class="body">
+        <div class="flex" style="justify-content: space-between;">
+          <div class="muted">Editable JSON body (sent as-is)</div>
+          <div class="flex">
+            <button class="btn" onclick="applyEditor()">Apply edits</button>
+            <button class="btn" onclick="copyJSON()">Copy</button>
+          </div>
+        </div>
+        <textarea id="jsonOut" spellcheck="false">{ "commands": [] }</textarea>
+
+        <label>Response</label>
+        <pre id="resp" class="status">No request sent yet.</pre>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ---------- Centralized data lists ----------
+    const DATA = {
+      items: [
+        "Wood", "Stone", "Flint", "Resin", "BoneFragments", "GreydwarfEye", "LeatherScraps", "DeerHide", "FineWood", "CoreWood",
+        "CopperOre", "TinOre", "Bronze", "IronScrap", "Iron", "SilverOre", "Silver", "BlackMetalScrap", "BlackMetal",
+        "LinenThread", "ElderBark", "Obsidian", "Guck", "SurtlingCore", "YmirRemains", "Chitin", "Needle", "Feathers",
+        "Honey", "Bloodbag", "Entrails", "WolfPelt", "WolfFang"
+      ],
+      effects: [
+        "BeltStrength",
+        "Burning",
+        "CampFire",
+        "Cold",
+        "CorpseRun",
+        "Demister",
+        "Encumbered",
+        "Freezing",
+        "Frost",
+        "GoblinShaman_shield",
+        "GP_Bonemass",
+        "GP_Eikthyr",
+        "GP_Fader",
+        "GP_Moder",
+        "GP_Queen",
+        "GP_TheElder",
+        "GP_Yagluth",
+        "Harpooned",
+        "Immobilized",
+        "ImmobilizedAshlands",
+        "ImmobilizedLong",
+        "Lightning",
+        "Poison",
+        "Potion_barleywine",
+        "Potion_BugRepellent",
+        "Potion_bzerker",
+        "Potion_eitr_lingering",
+        "Potion_eitr_minor",
+        "Potion_frostresist",
+        "Potion_hasty",
+        "Potion_health_lingering",
+        "Potion_health_major",
+        "Potion_health_medium",
+        "Potion_health_minor",
+        "Potion_LightFoot",
+        "Potion_poisonresist",
+        "Potion_stamina_lingering",
+        "Potion_stamina_medium",
+        "Potion_stamina_minor",
+        "Potion_strength",
+        "Potion_swimmer",
+        "Potion_tamer",
+        "Potion_tasty",
+        "Potion_TrollPheromones",
+        "Puke",
+        "Rested",
+        "Resting",
+        "SE_Dvergr_buff",
+        "SE_Dvergr_heal",
+        "SE_Greydwarf_shaman_heal",
+        "SetEffect_AshlandsMediumArmor",
+        "SetEffect_FenringArmor",
+        "SetEffect_FishingHat",
+        "SetEffect_HarvesterArmor",
+        "SetEffect_MageArmor",
+        "SetEffect_RootArmor",
+        "SetEffect_TrollArmor",
+        "SetEffect_WolfArmor",
+        "Shelter",
+        "Slimed",
+        "SlowFall",
+        "Smoked",
+        "SoftDeath",
+        "Spirit",
+        "Staff_shield",
+        "Tared",
+        "Warm",
+        "Wet",
+        "WindRun",
+        "Wishbone"
+      ],
+      mobs: [
+        "Abomination",
+        "Asksvin",
+        "Asksvin_hatchling",
+        "Bat",
+        "Blob",
+        "BlobElite",
+        "BlobLava",
+        "BlobTar",
+        "Boar",
+        "Boar_piggy",
+        "BogWitchKvastur",
+        "Bonemass",
+        "BonemawSerpent",
+        "Charred_Archer",
+        "Charred_Archer_Fader",
+        "Charred_Mage",
+        "Charred_Melee",
+        "Charred_Melee_Dyrnwyn",
+        "Charred_Melee_Fader",
+        "Charred_Twitcher",
+        "Charred_Twitcher_Summoned",
+        "Chicken",
+        "Deathsquito",
+        "Deer",
+        "Dragon",
+        "Draugr",
+        "Draugr_Elite",
+        "Draugr_Ranged",
+        "Dverger",
+        "DvergerAshlands",
+        "DvergerMage",
+        "DvergerMageFire",
+        "DvergerMageIce",
+        "DvergerMageSupport",
+        "DvergerTest",
+        "Eikthyr",
+        "Fader",
+        "FallenValkyrie",
+        "Fenring",
+        "Fenring_Cultist",
+        "Fenring_Cultist_Hildir",
+        "Fenring_Cultist_Hildir_nochest",
+        "gd_king",
+        "Ghost",
+        "Gjall",
+        "Goblin",
+        "Goblin_Gem",
+        "GoblinArcher",
+        "GoblinBrute",
+        "GoblinBrute_Hildir",
+        "GoblinBruteBros",
+        "GoblinBruteBros_nochest",
+        "GoblinKing",
+        "GoblinShaman",
+        "GoblinShaman_Hildir",
+        "GoblinShaman_Hildir_nochest",
+        "Greydwarf",
+        "Greydwarf_Elite",
+        "Greydwarf_Shaman",
+        "Greyling",
+        "Hare",
+        "Hatchling",
+        "Hen",
+        "Hive",
+        "Leech",
+        "Leech_cave",
+        "Lox",
+        "Lox_Calf",
+        "Mistile",
+        "Morgen",
+        "Morgen_NonSleeping",
+        "Neck",
+        "Seeker",
+        "SeekerBrood",
+        "SeekerBrute",
+        "SeekerQueen",
+        "Serpent",
+        "Skeleton",
+        "Skeleton_Friendly",
+        "Skeleton_Hildir",
+        "Skeleton_Hildir_nochest",
+        "Skeleton_NoArcher",
+        "Skeleton_Poison",
+        "staff_greenroots_tentaroot",
+        "StoneGolem",
+        "Surtling",
+        "TentaRoot",
+        "TheHive",
+        "Tick",
+        "TrainingDummy",
+        "Troll",
+        "Troll_Summoned",
+        "Ulv",
+        "Volture",
+        "Wolf",
+        "Wolf_cub",
+        "Wraith"
+      ]
+    };
+
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => document.querySelectorAll(sel);
+
+    let commands = [];
+    let nextId = 1;
+
+    // ---------- Populate dropdowns from DATA ----------
+    function populateSelect(selectId, list, withCustom = true) {
+      const sel = $('#' + selectId);
+      if (!sel) return;
+      const current = sel.value;
+      sel.innerHTML = '';
+      // Add options from the list (sorted but keep original first subset order if already curated)
+      const items = [...list];
+      // If the list looks curated, don't re-sort; otherwise, uncomment next line:
+      // items.sort((a,b)=>a.localeCompare(b));
+      for (const name of items) {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        sel.appendChild(opt);
+      }
+      if (withCustom) {
+        const custom = document.createElement('option');
+        custom.value = 'Custom';
+        custom.textContent = 'Custom…';
+        sel.appendChild(custom);
+      }
+      // Restore selection if possible
+      if ([...sel.options].some(o => o.value === current)) sel.value = current;
+    }
+
+    function rebuildAllSelects() {
+      populateSelect('itemPrefab', DATA.items);
+      populateSelect('effectName', DATA.effects);
+      populateSelect('spawnPrefab', DATA.mobs);
+      // hook up "custom" toggles
+      setupCustomToggles();
+    }
+
+    // Show/hide parameter panes based on type
+    function switchType() {
+      const type = $('#cmdType').value;
+      $('#pane-item').style.display = (type === 'item.give') ? '' : 'none';
+      $('#pane-effect').style.display = (type === 'effect.apply') ? '' : 'none';
+      const isSpawn = type.startsWith('spawn.');
+      $('#pane-spawn').style.display = isSpawn ? '' : 'none';
+      // spawn sub-pane
+      $$('.spawn-pane').forEach(e => e.style.display = 'none');
+      const map = {
+        'spawn.front': '#spawn-front',
+        'spawn.ring': '#spawn-ring',
+        'spawn.line': '#spawn-line',
+        'spawn.arc': '#spawn-arc',
+        'spawn.wedge': '#spawn-wedge',
+        'spawn.grid': '#spawn-grid',
+        'spawn.scatter': '#spawn-scatter',
+        'spawn.rain': '#spawn-rain',
+      };
+      if (map[type]) $(map[type]).style.display = '';
+    }
+
+    // toggle "Custom" inputs for selects
+    function setupCustomToggles() {
+      const pairs = [
+        ['#itemPrefab', '#itemPrefabCustom'],
+        ['#effectName', '#effectNameCustom'],
+        ['#spawnPrefab', '#spawnPrefabCustom'],
+      ];
+      pairs.forEach(([sel, cust]) => {
+        const s = $(sel), c = $(cust);
+        if (!s) return;
+        s.onchange = () => {
+          if (s.value === 'Custom') { c.style.display = ''; c.focus(); }
+          else { c.style.display = 'none'; c.value = ''; }
+        };
+      });
+    }
+
+    // Simple filter for any select from its base list
+    function filterSelect(selectId, baseList, query) {
+      const list = (query || '').trim().toLowerCase()
+        ? baseList.filter(x => x.toLowerCase().includes(query.toLowerCase()))
+        : baseList;
+      populateSelect(selectId, list);
+    }
+
+    function addCommand() {
+      const id = ($('#cmdId').value || `c${nextId++}`).trim();
+      const type = $('#cmdType').value;
+
+      const makePrefab = (sel, customSel) => {
+        const v = $(sel).value;
+        return v === 'Custom' ? ($(customSel).value.trim() || '') : v;
+      };
+
+      let payload = {};
+      if (type === 'item.give') {
+        payload = {
+          prefab: makePrefab('#itemPrefab', '#itemPrefabCustom'),
+          amount: parseInt($('#itemAmount').value || '1'),
+          quality: parseInt($('#itemQuality').value || '1'),
+          variant: parseInt($('#itemVariant').value || '0')
+        };
+      } else if (type === 'effect.apply') {
+        payload = {
+          name: (function () {
+            const v = $('#effectName').value;
+            return v === 'Custom' ? ($('#effectNameCustom').value.trim() || '') : v;
+          })(),
+          duration: parseFloat($('#effectDuration').value || '0')
+        };
+      } else {
+        // spawn.* common
+        payload.prefab = makePrefab('#spawnPrefab', '#spawnPrefabCustom');
+        payload.stars = parseInt($('#spawnStars').value || '0');
+
+        if (type === 'spawn.front') {
+          payload.count = parseInt($('#frontCount').value || '1');
+          payload.distance = parseFloat($('#frontDistance').value || '8');
+          payload.delay = parseFloat($('#frontDelay').value || '0');
+          payload.ttl = parseFloat($('#frontTTL').value || '0');
+        }
+        else if (type === 'spawn.ring') {
+          payload.count = parseInt($('#ringCount').value || '1');
+          payload.radius = parseFloat($('#ringRadius').value || '6');
+          payload.delay = parseFloat($('#ringDelay').value || '0');
+          payload.ttl = parseFloat($('#ringTTL').value || '0');
+        }
+        else if (type === 'spawn.line') {
+          payload.count = parseInt($('#lineCount').value || '1');
+          payload.spacing = parseFloat($('#lineSpacing').value || '3');
+          payload.distance = parseFloat($('#lineDistance').value || '10');
+          payload.delay = parseFloat($('#lineDelay').value || '0');
+          payload.ttl = parseFloat($('#lineTTL').value || '0');
+        }
+        else if (type === 'spawn.arc') {
+          payload.count = parseInt($('#arcCount').value || '1');
+          payload.radius = parseFloat($('#arcRadius').value || '6');
+          payload.spanDeg = parseFloat($('#arcSpan').value || '120');
+          payload.delay = parseFloat($('#arcDelay').value || '0');
+          payload.ttl = parseFloat($('#arcTTL').value || '0');
+        }
+        else if (type === 'spawn.wedge') {
+          payload.count = parseInt($('#wedgeCount').value || '1');
+          payload.spacing = parseFloat($('#wedgeSpacing').value || '3');
+          payload.distance = parseFloat($('#wedgeDistance').value || '10');
+          payload.delay = parseFloat($('#wedgeDelay').value || '0');
+          payload.ttl = parseFloat($('#wedgeTTL').value || '0');
+        }
+        else if (type === 'spawn.grid') {
+          payload.rows = parseInt($('#gridRows').value || '1');
+          payload.cols = parseInt($('#gridCols').value || '1');
+          payload.spacing = parseFloat($('#gridSpacing').value || '3');
+          payload.distance = parseFloat($('#gridDistance').value || '10');
+          payload.delay = parseFloat($('#gridDelay').value || '0');
+          payload.ttl = parseFloat($('#gridTTL').value || '0');
+        }
+        else if (type === 'spawn.scatter') {
+          payload.count = parseInt($('#scatterCount').value || '1');
+          payload.radius = parseFloat($('#scatterRadius').value || '6');
+          payload.distance = parseFloat($('#scatterDistance').value || '10');
+          payload.delay = parseFloat($('#scatterDelay').value || '0');
+          payload.ttl = parseFloat($('#scatterTTL').value || '0');
+        }
+        else if (type === 'spawn.rain') {
+          payload.count = parseInt($('#rainCount').value || '1');
+          payload.radius = parseFloat($('#rainRadius').value || '6');
+          payload.height = parseFloat($('#rainHeight').value || '15');
+          payload.delay = parseFloat($('#rainDelay').value || '0');
+          payload.ttl = parseFloat($('#rainTTL').value || '0');
+        }
+      }
+
+      // Validate minimal required strings
+      if ((type === 'item.give' && !payload.prefab) ||
+        (type === 'effect.apply' && !payload.name) ||
+        (type.startsWith('spawn.') && !payload.prefab)) {
+        alert('Please fill all required fields (prefab/name).');
+        return;
+      }
+
+      commands.push({ id, type, payload });
+      $('#cmdId').value = '';
+      renderList();
+      updatePreview();
+    }
+
+    function renderList() {
+      const root = $('#cmdList');
+      root.innerHTML = '';
+      commands.forEach((c, idx) => {
+        const div = document.createElement('div');
+        div.className = 'cmd';
+        const summary = document.createElement('div');
+        const tag = `<span class="tag">${c.type}</span>`;
+        const label = (c.type === 'item.give') ? c.payload.prefab + ' ×' + c.payload.amount
+          : (c.type === 'effect.apply') ? (c.payload.name + (c.payload.duration ? ` (${c.payload.duration}s)` : ''))
+            : (c.payload.prefab || '???');
+        summary.innerHTML = `${tag}<b>${c.id || '(no id)'}</b> <small>${label}</small>`;
+        const actions = document.createElement('div');
+        actions.className = 'right-actions';
+        actions.innerHTML = `
+        <button class="btn" title="Move up" ${idx === 0 ? 'disabled' : ''} onclick="moveUp(${idx})">↑</button>
+        <button class="btn" title="Move down" ${idx === commands.length - 1 ? 'disabled' : ''} onclick="moveDown(${idx})">↓</button>
+        <button class="btn warn" title="Duplicate" onclick="dupCmd(${idx})">⎘</button>
+        <button class="btn err" title="Delete" onclick="delCmd(${idx})">✕</button>`;
+        div.appendChild(summary);
+        div.appendChild(actions);
+        root.appendChild(div);
+      });
+    }
+
+    function updatePreview() {
+      const body = { commands };
+      $('#jsonOut').value = JSON.stringify(body, null, 2);
+    }
+
+    function applyEditor() {
+      try {
+        const obj = JSON.parse($('#jsonOut').value);
+        if (!obj || !Array.isArray(obj.commands)) throw new Error('Missing commands array');
+        commands = obj.commands;
+        // try to keep nextId ahead
+        let maxNumeric = 0;
+        for (const c of commands) {
+          const m = String(c.id || '').match(/^c(\d+)$/i);
+          if (m) maxNumeric = Math.max(maxNumeric, parseInt(m[1], 10));
+        }
+        nextId = Math.max(nextId, maxNumeric + 1);
+        renderList();
+        alert('Editor applied back to builder.');
+      } catch (e) {
+        alert('Invalid JSON: ' + e.message);
+      }
+    }
+
+    async function sendBatch() {
+      const endpoint = $('#endpoint').value.trim();
+      const body = $('#jsonOut').value;
+      let respText = '';
+      try {
+        const r = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body
+        });
+        respText = await r.text();
+        $('#resp').textContent = `HTTP ${r.status}\n` + pretty(respText);
+      } catch (e) {
+        $('#resp').textContent = 'Request failed: ' + e.message;
+      }
+    }
+
+    function pretty(t) {
+      try { return JSON.stringify(JSON.parse(t), null, 2); } catch { return t; }
+    }
+
+    function copyJSON() {
+      const ta = $('#jsonOut');
+      ta.select(); ta.setSelectionRange(0, ta.value.length);
+      document.execCommand('copy');
+    }
+
+    function clearAll() {
+      commands = [];
+      renderList();
+      updatePreview();
+      $('#resp').textContent = 'Cleared.';
+    }
+
+    function delCmd(i) { commands.splice(i, 1); renderList(); updatePreview(); }
+    function moveUp(i) { if (i > 0) { [commands[i - 1], commands[i]] = [commands[i], commands[i - 1]]; renderList(); updatePreview(); } }
+    function moveDown(i) { if (i < commands.length - 1) { [commands[i + 1], commands[i]] = [commands[i], commands[i + 1]]; renderList(); updatePreview(); } }
+    function dupCmd(i) { const c = JSON.parse(JSON.stringify(commands[i])); c.id = `c${nextId++}`; commands.splice(i + 1, 0, c); renderList(); updatePreview(); }
+
+    function loadExample(which) {
+      if (which === 1) {
+        commands = [
+          { id: `c${nextId++}`, type: 'spawn.ring', payload: { prefab: 'Skeleton', stars: 1, count: 6, radius: 10, delay: 0.25, ttl: 20 } },
+          { id: `c${nextId++}`, type: 'item.give', payload: { prefab: 'Wood', amount: 25, quality: 1, variant: 0 } },
+          { id: `c${nextId++}`, type: 'effect.apply', payload: { name: 'Wet', duration: 20 } }
+        ];
+      } else if (which === 2) {
+        commands = [
+          { id: `c${nextId++}`, type: 'spawn.line', payload: { prefab: 'Draugr', stars: 2, count: 8, spacing: 3, distance: 15, delay: 0.15, ttl: 15 } },
+          { id: `c${nextId++}`, type: 'spawn.grid', payload: { prefab: 'Greydwarf', stars: 0, rows: 3, cols: 4, spacing: 3, distance: 12, delay: 0.1, ttl: 20 } }
+        ];
+      }
+      renderList();
+      updatePreview();
+    }
+
+    // init
+    rebuildAllSelects();
+    switchType();
+    updatePreview();
+    renderList();
+  </script>
+</body>
+
+</html>

@@ -1,65 +1,126 @@
-﻿using BepInEx.Logging;
-using System;
+﻿using System;
+using BepInEx.Logging;
+using UnityEngine;
 
 namespace ValheimBridgeMod
 {
     public sealed class ItemService
     {
         private readonly ManualLogSource _log;
-        public ItemService(ManualLogSource log) => _log = log;
 
-        public void TryGiveItemGeneric(string prefabName, int amount)
+        public ItemService(ManualLogSource log)
+        {
+            _log = log;
+        }
+
+        /// <summary>
+        /// Give an item by prefab name to the local player.
+        /// Splits into valid stack sizes; drops stacks on the ground if inventory is full.
+        /// </summary>
+        public void TryGiveItemGeneric(string prefabName, int amount, int quality, int variant)
         {
             try
             {
                 var player = Player.m_localPlayer;
-                if (player == null)
+                if (!player)
                 {
-                    _log.LogWarning("No local player");
-                    MessageHud.instance?.ShowMessage(MessageHud.MessageType.Center, "StreamBridge: No local player");
+                    _log.LogInfo("item.give: no local player");
+                    MaybeToast("StreamBridge: No local player");
                     return;
                 }
 
                 var odb = ObjectDB.instance;
-                if (odb == null)
+                if (!odb)
                 {
-                    _log.LogWarning("ObjectDB is null");
-                    MessageHud.instance?.ShowMessage(MessageHud.MessageType.Center, "StreamBridge: ObjectDB is null");
+                    _log.LogInfo("item.give: ObjectDB not ready");
+                    MaybeToast("StreamBridge: Items not ready");
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(prefabName))
+                {
+                    _log.LogInfo("item.give: missing prefab name");
+                    MaybeToast("StreamBridge: Missing prefab");
                     return;
                 }
 
                 var prefab = odb.GetItemPrefab(prefabName);
-                if (prefab == null)
+                if (!prefab)
                 {
-                    _log.LogWarning($"Item prefab not found: {prefabName}");
-                    MessageHud.instance?.ShowMessage(MessageHud.MessageType.Center, $"StreamBridge: Item not found '{prefabName}'");
+                    _log.LogInfo($"item.give: prefab not found '{prefabName}'");
+                    MaybeToast($"StreamBridge: Item not found '{prefabName}'");
                     return;
                 }
 
                 var itemDrop = prefab.GetComponent<ItemDrop>();
-                if (itemDrop == null)
+                if (!itemDrop)
                 {
-                    _log.LogWarning($"ItemDrop missing on prefab: {prefabName}");
-                    MessageHud.instance?.ShowMessage(MessageHud.MessageType.Center, $"StreamBridge: ItemDrop missing ({prefabName})");
+                    _log.LogInfo($"item.give: prefab missing ItemDrop '{prefabName}'");
+                    MaybeToast($"StreamBridge: Not an item '{prefabName}'");
                     return;
                 }
 
-                var data = itemDrop.m_itemData.Clone();
-                data.m_stack = Math.Max(1, amount);
+                var shared = itemDrop.m_itemData.m_shared;
+                int maxQuality = Mathf.Max(1, shared.m_maxQuality);                  // clamp 1..maxQuality
+                int maxStack = Mathf.Max(1, shared.m_maxStackSize);               // clamp to legal stack size
 
-                if (player.GetInventory().AddItem(data))
-                    player.ShowPickupMessage(data, data.m_stack);
-                else
-                    ItemDrop.DropItem(data, data.m_stack, player.transform.position + player.transform.forward * 1.5f, player.transform.rotation);
+                int wantAmount = Mathf.Max(1, amount);
+                int wantQuality = Mathf.Clamp(quality <= 0 ? 1 : quality, 1, maxQuality);
+                int wantVariant = Mathf.Max(0, variant);
 
-                _log.LogInfo($"Gave {amount}x {prefabName}");
-                MessageHud.instance?.ShowMessage(MessageHud.MessageType.Center, $"StreamBridge: Gave {amount}x {prefabName}");
+                int addedStacks = 0;
+                int droppedStacks = 0;
+                int remaining = wantAmount;
+
+                var inv = player.GetInventory();
+                var pos = player.transform.position + player.transform.forward * 1.5f;
+                var rot = player.transform.rotation;
+
+                while (remaining > 0)
+                {
+                    int batch = Mathf.Min(remaining, maxStack);
+
+                    // fresh clone per stack
+                    var data = itemDrop.m_itemData.Clone();
+                    data.m_stack = batch;
+                    data.m_quality = wantQuality;
+                    data.m_variant = wantVariant;
+
+                    if (inv.AddItem(data))
+                    {
+                        addedStacks++;
+                        // Optional pickup message (keeps things quiet unless Notify=true)
+                        if (BridgePlugin.NotifyEnabled) player.ShowPickupMessage(data, data.m_stack);
+                    }
+                    else
+                    {
+                        // Drop gently at feet if inventory can't accept it
+                        ItemDrop.DropItem(data, data.m_stack, pos, rot);
+                        droppedStacks++;
+                    }
+
+                    remaining -= batch;
+                }
+
+                _log.LogInfo($"item.give ok: prefab={prefabName} amt={wantAmount} q={wantQuality} v={wantVariant} added={addedStacks} dropped={droppedStacks}");
+
+                if (BridgePlugin.NotifyEnabled)
+                {
+                    var label = !string.IsNullOrEmpty(shared.m_name) ? shared.m_name : prefabName;
+                    MaybeToast($"Gave {wantAmount} × {label}");
+                }
             }
             catch (Exception e)
             {
-                _log.LogError(e);
-                MessageHud.instance?.ShowMessage(MessageHud.MessageType.Center, $"StreamBridge: Give error {e.GetType().Name}");
+                _log.LogError($"item.give error: {e}");
+                MaybeToast("StreamBridge: Item give failed");
             }
+        }
+
+        private static void MaybeToast(string msg)
+        {
+            if (BridgePlugin.NotifyEnabled)
+                MessageHud.instance?.ShowMessage(MessageHud.MessageType.Center, msg);
         }
     }
 }
