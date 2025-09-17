@@ -11,7 +11,7 @@ It is designed to be used by companion apps/bots during streams (e.g., chat-trig
 BepInEx 5 must be installed into your Valheim folder and the game launched once so that it creates required folders (`BepInEx\plugins`, `BepInEx\config`, `BepInEx\core`).  
 This is a **one-time setup step** — both release users and developers must do this before StreamBridge will work.
 
-➡️ [**Releases Page**](https://github.com/yourname/yourrepo/releases)
+➡️ [**Releases Page**](https://github.com/DakotaCondos/ValheimBridgeMod/releases)
 
 1. Download the latest **StreamBridge.zip** from the release assets.  
    This archive contains the `StreamBridge` plugin folder with the DLL already built.
@@ -63,9 +63,13 @@ Whether you want to build from the included codebase or start your own project, 
 2. Open the solution in Visual Studio 2022.
 3. Ensure target framework is **.NET Framework 4.7.2** (compatible with Valheim + BepInEx 5).
 4. References should already be set up in the project:
+   - `0HarmonyLib.dll`
    - `BepInEx.dll`
-   - `0Harmony.dll`
-   - Unity assemblies from Valheim (`valheim_Data\Managed\`)
+   - `assembly_valheim.dll`
+   - `assembly_utils.dll`
+   - `UnityEngine.CoreModule.dll`
+   - `UnityEngine.PhysicsModule.dll`
+   - `UnityEngine.dll`
    - `Newtonsoft.Json.dll`
 5. Set build output path so the DLL lands directly in your Valheim plugins folder:  
    ```
