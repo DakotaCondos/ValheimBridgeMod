@@ -13,7 +13,7 @@ This is a **one-time setup step** — both release users and developers must do 
 
 ➡️ [**Releases Page**](https://github.com/DakotaCondos/ValheimBridgeMod/releases)
 
-1. Download the latest **StreamBridge.zip** from the release assets.  
+1. Download the zip file **ValheimBridgeMod.zip** from the release assets.  
    This archive contains the `StreamBridge` plugin folder with the DLL already built.
 2. Extract the contents directly into your Valheim plugins directory:
    ```
