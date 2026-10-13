@@ -3,6 +3,8 @@
 A lightweight **host-only** bridge for Valheim that listens on `localhost` and executes gameplay actions sent as **JSON** over HTTP. 
 It is designed to be used by companion apps/bots during streams (e.g., chat-triggered spawns, item rewards, or temporary effects).
 
+[Project overview](https://red-wave-026ab431e.3.azurestaticapps.net/valheim) · [Release and browser command tester](https://github.com/DakotaCondos/ValheimBridgeMod/releases/tag/v1.0.1)
+
 ---
 
 ## 📥 Download & Installation
@@ -58,7 +60,7 @@ Whether you want to build from the included codebase or start your own project, 
 
 1. Clone the repository:
    ```bash
-   git clone https://https://github.com/DakotaCondos/ValheimBridgeMod.git
+   git clone https://github.com/DakotaCondos/ValheimBridgeMod.git
    ```
 2. Open the solution in Visual Studio 2022.
 3. Ensure target framework is **.NET Framework 4.7.2** (compatible with Valheim + BepInEx 5).
